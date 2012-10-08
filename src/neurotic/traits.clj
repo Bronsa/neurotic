@@ -1,21 +1,10 @@
-(ns neurotic.core
+(ns neurotic.traits
   (:refer-clojure :exclude [deftype]))
 
 (def ^:private separate (juxt filter remove))
 
 (defn- annotate [[name args & _]]
   (list name (meta name) (meta args) (map meta args)))
-
-(defmacro deftrait
-  "Usage: (deftrait ATtrait [^:unsyncronized-volatile elem]
-           AProtocol
-           (protocol-fn [this] elem))"
-  [name required-elements & impl]
-  (let [[declarations protocols-or-interfaces] (separate seq? impl)]
-    `(def ~name
-       '{:required-elements ~required-elements
-         :protocols-or-interfaces ~protocols-or-interfaces
-         :declarations ~declarations})))
 
 (defn- mismatching-mutable? [meta1 meta2]
   (not (every? true?  (map #(= (% meta1) (% meta2)) [:unsynchronized-mutable :volatile-mutable]))))
@@ -31,6 +20,17 @@
             provided (map hashize provided)]
         (if (some true? (mapcat (fn [pr] (map #(mismatching-mutable? (args %) (pr %)) required)) provided))
           `(throw (Exception. "Mutable declaration mismatching for one or more args")))))))
+
+(defmacro deftrait
+  "Usage: (deftrait ATtrait [^:unsyncronized-volatile elem]
+           AProtocol
+           (protocol-fn [this] elem))"
+  [name required-elements & impl]
+  (let [[declarations protocols-or-interfaces] (separate seq? impl)]
+    `(def ~name
+       '{:required-elements ~required-elements
+         :protocols-or-interfaces ~protocols-or-interfaces
+         :declarations ~declarations})))
 
 (defmacro deftype
   "Like clojure.core/deftype, but allows traits implementations.
