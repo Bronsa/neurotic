@@ -1,57 +1,49 @@
 (ns neurotic.core
   (:refer-clojure :exclude [deftype]))
 
-(defn merge-methods [[defaults provideds]]
-  (let [explicitize (fn [[fname args & body]]
-                      [[(meta fname) fname (list (meta args) (map meta args)) (count args)] [args body]])
-        implicitize (fn [[[_ name _ _] [args body]]]
-                      `(~name ~args ~@body))
-        defaults (apply hash-map (mapcat explicitize defaults))
-        provideds (apply hash-map (mapcat explicitize provideds))
-        methods (merge defaults provideds)]
-    (map implicitize methods)))
+(def ^:private separate (juxt filter remove))
 
-(defn mismatching-mutable? [k1 k2]
-  (not (apply =  
-              (map (comp (juxt :unsynchronized-mutable
-                               :volatile-mutable) meta) [k1 k2]))))
+(defn- annotate [[name args & _]]
+  (list name (meta name) (meta args) (map meta args)))
 
-(defn validate-args [provided required]
-  (let [pr (set provided)
-        req (set required)
-        missing (remove pr req)]
+(defmacro deftrait
+  "Usage: (deftrait ATtrait [^:unsyncronized-volatile elem]
+           AProtocol
+           (protocol-fn [this] elem))"
+  [name required-elements & impl]
+  (let [[declarations protocols-or-interfaces] (separate seq? impl)]
+    `(def ~name
+       '{:required-elements ~required-elements
+         :protocols-or-interfaces ~protocols-or-interfaces
+         :declarations ~declarations})))
+
+(defn- mismatching-mutable? [meta1 meta2]
+  (not (every? true?  (map #(= (% meta1) (% meta2)) [:unsynchronized-mutable :volatile-mutable]))))
+
+(defn- validate-elements [args provided]
+  (let [required (set (mapcat identity provided))
+        missing (reduce disj required args)]
     (if-not (empty? missing)
       `(throw (Exception. (str "deftype declaration is missing the following args: " ~@(map str missing)
-                               ", required by one ")))
-      (if (some true? (map mismatching-mutable? (filter req pr) req))
-        `(throw (Exception. "mutable declaration mismatching for one or more args"))))))
+                               "required by one or more implementing traits")))
+      (let [hashize (fn [args] (into {} (map #(vector % (meta %)) args)))
+            args (hashize args)
+            provided (map hashize provided)]
+        (if (some true? (mapcat (fn [pr] (map #(mismatching-mutable? (args %) (pr %)) required)) provided))
+          `(throw (Exception. "Mutable declaration mismatching for one or more args")))))))
 
-(defmacro deftype [name args & body]
+(defmacro deftype
+  "Like clojure.core/deftype, but allows traits implementations.
+Usage: (deftype AType [] :defaults [ATrait])"
+  [name args & body]
   (if (= :defaults (first body))
-    (let [body (next body)
-          [defaults abstracts-or-required] ((juxt (partial map rest)
-                                                  (partial map first))
-                                            (map eval (first body)))
-          [abstracts required] ((juxt remove (comp (partial mapcat identity) filter))
-                                vector? abstracts-or-required)
-          separate (juxt (comp set (partial mapcat second))
-                          (partial map first))
-          [protocols methods] (separate (map (partial (juxt filter remove) list?) defaults))
-          methods  (if (> (count methods) 1)
-                     (reduce (fn [acc cur] (merge-methods [acc cur])) methods)
-                     (first methods))]
-      (if-let [err (validate-args args required)] 
+    (let [traits (map eval (second body))
+          body (rest (rest body))]
+      (if-let [err (validate-elements args (map :required-elements traits))]
         err
-        (if (empty? abstracts)
-          (let [[m p] ((juxt filter remove) list? (rest body))
-                protocols (into protocols p)]
-            `(clojure.core/deftype ~name ~args
-               ~@protocols
-               ~@(merge-methods [methods m])))
-          `(throw (Exception. "not yet implemented :(")))))
+        (let [[declarations protocols-or-interfaces] (separate seq? body)
+              protocols-or-interfaces (reduce conj (set protocols-or-interfaces) (mapcat :protocols-or-interfaces traits))
+              annotate (fn [decs] (into {} (map #(vector (annotate %) %) decs)))
+              declarations (vals (merge (apply merge (map #(annotate (:declarations %)) traits)) (annotate declarations)))]
+          `(clojure.core/deftype ~name ~args ~@protocols-or-interfaces ~@declarations))))
     `(clojure.core/deftype ~name ~args ~@body)))
-
-(defmacro deftrait [name elems & body]
-  (if (= :abstract (first body))
-    `(throw (Exception. "not yet implemented :("))
-    `(def ~name '(~elems ~@body))))
