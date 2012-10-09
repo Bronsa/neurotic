@@ -32,9 +32,21 @@
          :protocols-or-interfaces ~protocols-or-interfaces
          :declarations ~declarations})))
 
-(defmacro deftype
-  "Like clojure.core/deftype, but allows traits implementations.
-Usage: (deftype AType [] :defaults [ATrait])"
+(defmacro ^:private emit-deftype* [name fields & opts+specs]
+  (let [gname name
+        [interfaces methods opts] (#'clojure.core/parse-opts+specs opts+specs)
+        ns-part (namespace-munge *ns*)
+        classname (symbol (str ns-part "." gname))
+        hinted-fields fields
+        fields (vec (map #(with-meta % nil) fields))]
+    `(let []
+       (declare ~(symbol (str  '-> gname)))
+       ~(#'clojure.core/emit-deftype* name gname (vec hinted-fields) (vec interfaces) methods)
+       (import ~classname)
+       ~(#'clojure.core/build-positional-factory gname classname fields)
+       ~classname)))
+
+(defmacro ^:private deftype-raw
   [name args & body]
   (if (= :defaults (first body))
     (let [traits (map eval (second body))
@@ -45,5 +57,9 @@ Usage: (deftype AType [] :defaults [ATrait])"
               protocols-or-interfaces (reduce conj (set protocols-or-interfaces) (mapcat :protocols-or-interfaces traits))
               annotate (fn [decs] (into {} (map #(vector (annotate %) %) decs)))
               declarations (vals (merge (apply merge (map #(annotate (:declarations %)) traits)) (annotate declarations)))]
-          `(clojure.core/deftype ~name ~args ~@protocols-or-interfaces ~@declarations))))
-    `(clojure.core/deftype ~name ~args ~@body)))
+          `(emit-deftype* ~name ~args ~@protocols-or-interfaces ~@declarations))))
+    `(emit-deftype* ~name ~args ~@body)))
+
+(defmacro deftype [name args & body]
+  (#'clojure.core/validate-fields args)
+  `(deftype-raw ~name ~args ~@body))
