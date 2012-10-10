@@ -15,13 +15,13 @@ In Leiningen:
 ```clojure
 (ns my-ns
   (:refer-clojure :exclude [deftype])
-  (:require [neurotic.traits :refer [deftype deftraits]]))
+  (:require [neurotic.traits :refer [deftype deftrait]]))
   
 (defprotocol AProtocol (f [_]))
 
-(deftrait AProtocol-trait [foo] (f [_] foo))
+(deftrait AProtocol-trait [foo] AProtocol  (f [_] foo))
 
-(deftype AType [foo] :defaults [AProtocol-traits])
+(deftype AType [foo] :defaults [AProtocol-trait])
 ```
 
 ## License
