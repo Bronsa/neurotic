@@ -78,8 +78,7 @@
     `(let []
        (declare ~(symbol (str 'map-> name)))
        ~(deftype-raw name (conj hinted-fields '__meta '__extmap)
-          `(
-            clojure.lang.IRecord
+          `(clojure.lang.IRecord
 
             clojure.lang.IHashEq
             (hasheq [this#] (bit-xor ~type-hash (.hashCode this#)))
@@ -99,18 +98,18 @@
                                       base-fields)
                          (get ~'__extmap k# else#)))
             (getLookupThunk [this# k#]
-                            (let [~'gclass (class this#)]              
+                            (let [~'gclass (class this#)]
                               (case k#
-                                ~@(let [hinted-target (with-meta 'gtarget {:tag name})] 
-                                    (mapcat 
+                                ~@(let [hinted-target (with-meta 'gtarget {:tag name})]
+                                    (mapcat
                                      (fn [fld]
-                                       [(keyword fld) 
-                                        `(reify clojure.lang.ILookupThunk 
-                                           (get [~'thunk ~'gtarget] 
-                                             (if (identical? (class ~'gtarget) ~'gclass) 
+                                       [(keyword fld)
+                                        `(reify clojure.lang.ILookupThunk
+                                           (get [~'thunk ~'gtarget]
+                                             (if (identical? (class ~'gtarget) ~'gclass)
                                                (. ~hinted-target ~(symbol fld))
                                                ~'thunk)))])
-                                base-fields))
+                                     base-fields))
                                 nil)))
 
             clojure.lang.IPersistentMap
