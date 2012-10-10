@@ -1,13 +1,13 @@
 # neurotic
 
-A library to get traits support to clojure's deftype
+A library to get traits support to clojure's deftype and defrecord
 
 ## Installation
 
 In Leiningen:
 
 ```clojure
-:dependencies [[bronsa/neurotic "0.1.0"]]
+:dependencies [[bronsa/neurotic "0.2.0"]]
 ```
 
 ## Usage
