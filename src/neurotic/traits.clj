@@ -108,7 +108,7 @@
                                         `(reify clojure.lang.ILookupThunk 
                                            (get [~'thunk ~'gtarget] 
                                              (if (identical? (class ~'gtarget) ~'gclass) 
-                                               (. ~hinted-target ~(keyword fld))
+                                               (. ~hinted-target ~(symbol fld))
                                                ~'thunk)))])
                                 base-fields))
                                 nil)))
@@ -122,7 +122,7 @@
                     (or (identical? this# ~gs)
                         (when (identical? (class this#) (class ~gs))
                           (let [~gs ~(with-meta gs {:tag name})]
-                            (and  ~@(map (fn [fld] `(= ~fld (. ~gs ~(keyword fld)))) base-fields)
+                            (and  ~@(map (fn [fld] `(= ~fld (. ~gs ~(symbol fld)))) base-fields)
                                   (= ~'__extmap (. ~gs ~'__extmap))))))))
             (containsKey [this# k#] (not (identical? this# (.valAt this# k# this#))))
             (entryAt [this# k#] (let [v# (.valAt this# k# this#)]
