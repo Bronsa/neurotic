@@ -7,7 +7,7 @@ A library to get traits support to clojure's deftype and defrecord.
 In Leiningen:
 
 ```clojure
-:dependencies [[bronsa/neurotic "0.2.0"]]
+:dependencies [[bronsa/neurotic "0.2.1"]]
 ```
 
 ## Usage
