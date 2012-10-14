@@ -54,7 +54,7 @@ my-ns=> (deftrait ATrait2 [] AProtocol (g [_] 0) (g [_ i] i) (f [_] 0))
 #'my-ns/ATrait2
 ```
 
-Both ATrait and ATrait2 implements the single-arity version of g, ehat happens when we implements both the traits in a new type?
+Both ATrait and ATrait2 implements the single-arity version of `g`; what happens when we implements both the traits in a new type?
 
 ```clojure
 my-ns=> (deftype AType [] :defaults [ATrait2 ATrait])
@@ -75,6 +75,7 @@ my-ns=> (f (AType3.))
 You can notice that we didn't need to specify in the body of deftype that we were implementing the protocol `AProtocol` since it's already specified in at least one of the implemented traits.
 
 Let's now see how the required-args mechanism works:
+
 Lets' define two traits
 ```clojure
 my-ns=> (deftrait ATrait3 [foo])
