@@ -22,7 +22,7 @@
         (if (some true? (mapcat (fn [pr] (map #(mismatching-mutable? (args %) (pr %)) required)) provided))
           `(throw (Exception. "Mutable declaration mismatching for one or more args")))))))
 
-(defrecord Trait [required-elements protocols-or-interfaces declarations])
+(clojure.core/defrecord Trait [required-elements protocols-or-interfaces declarations])
 
 (defmacro deftrait
   "Usage: (deftrait ATtrait [^:unsyncronized-volatile elem]
