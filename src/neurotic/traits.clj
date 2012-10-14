@@ -29,6 +29,7 @@
            AProtocol
            (protocol-fn [this] elem))"
   [name required-elements & impl]
+  (assert (vector? required-elements))
   (let [[declarations protocols-or-interfaces] (separate seq? impl)]
     `(def ~name
        (map->Trait '{:required-elements ~required-elements
