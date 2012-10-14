@@ -1,5 +1,5 @@
 (ns neurotic.traits
-  (:refer-clojure :exclude [deftype defrecord])
+  (:refer-clojure :exclude [deftype defrecord extend])
   (:require [clojure.string :as s]))
 
 (def ^:private separate (juxt filter remove))
@@ -164,3 +164,18 @@
          ~(str "Factory function for class " classname ", taking a map of keywords to field values.")
          ([m#] (~(symbol (str classname "/create")) m#)))
        ~classname)))
+
+;;check  (. (eval type) getBasis), mutable declarations, and interfaces
+(defmacro extend [type & body]
+  (if (= :traits (first body))
+    (let [traits (map eval (second body))
+          body (rest (rest body))
+          protocols (set (mapcat :protocols-or-interfaces traits))
+          methods (->> (mapcat :declarations traits)
+                       (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
+                       (into {} (map (fn [[k v]] [k (concat '(fn) (vals v))]))))
+          traits (mapcat (fn [p] (let [m (keys (:method-map p))
+                                       name (:on p)]
+                                   [name (into {} (map #(vector % (methods %)) m))])) protocols)]
+      `(clojure.core/extend ~type ~@traits ~@body))
+    `(clojure.core/extend ~type ~@body)))
