@@ -21,7 +21,7 @@ user=> (ns my-ns
          (:refer-clojure :exclude [deftype])
          (:require [neurotic.traits :refer [deftype deftrait]]))
 nil
-``
+```
 Next, let's define a protocol with two functions:
 ```clojure
 my-ns=> (defprotocol AProtocol (f [_]) (g [_] [_ _]))
