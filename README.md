@@ -39,7 +39,7 @@ my-ns=> (deftrait ATrait [] AProtocol (g [_] 1))
 
 Now that we have created the trait, let's see how to use it in a `deftype`
 ```clojure
-my-ns=> (deftype AType [] :defaults [ATrait])
+my-ns=> (deftype AType [] :traits [ATrait])
 my_ns.AType
 ```
 
@@ -59,7 +59,7 @@ my-ns=> (deftrait ATrait2 [] AProtocol (g [_] 0) (g [_ i] i) (f [_] 0))
 Both ATrait and ATrait2 implements the single-arity version of `g`; what happens when we implements both the traits in a new type?
 
 ```clojure
-my-ns=> (deftype AType [] :defaults [ATrait2 ATrait])
+my-ns=> (deftype AType [] :traits [ATrait2 ATrait])
 my_ns.AType
 my-ns=> (let [a (AType2.)] [(g a) (g a :foo) (f a)]) 
 [1 :foo 0]
@@ -69,7 +69,7 @@ We can see that when multiple traits implementing the same function and arity, t
 
 Additionaly, the implementation provided in the body of a `deftype` wind over all the traits:
 ```clojure
-my-ns=> (deftype AType3 [] :defaults [ATrait2 ATrait] (f [_] 2))
+my-ns=> (deftype AType3 [] :traits [ATrait2 ATrait] (f [_] 2))
 my_ns.AType3
 my-ns=> (f (AType3.))
 2
@@ -88,13 +88,13 @@ my-ns=> (deftrait ATrait4 [^:volatile-mutable foo])
 
 Let's see what happens when implementing those traits
 ```clojure
-my-ns=> (deftype AType4 [foo] :defaults [ATrait3])
+my-ns=> (deftype AType4 [foo] :traits [ATrait3])
 my_ns.AType4
-my-ns=> (deftype AType5 [foo] :defaults [ATrait4])
+my-ns=> (deftype AType5 [foo] :traits [ATrait4])
 Exception Mutable declaration mismatching for one or more args  my-ns/eval960 (NO_SOURCE_FILE:1)
-my-ns=> (deftype AType6 [^:volatile-mutable foo] :defaults [ATrait4])
+my-ns=> (deftype AType6 [^:volatile-mutable foo] :traits [ATrait4])
 my_ns.AType6
-my-ns=> (deftype AType7 [] :defaults [ATrait4])
+my-ns=> (deftype AType7 [] :traits [ATrait4])
 Exception deftype declaration is missing the following args: foo, required by one or more implementing traits  my-ns/eval967 (NO_SOURCE_FILE:1)
 ```
 

@@ -48,7 +48,7 @@
 
 (defn- deftype-raw
   [name args body]
-  (if (= :defaults (first body))
+  (if (= :traits (first body))
     (let [traits (map eval (second body))
           body (rest (rest body))]
       (if-let [err (validate-elements args (map :required-elements traits))]
