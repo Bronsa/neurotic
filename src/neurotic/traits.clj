@@ -1,5 +1,5 @@
 (ns neurotic.traits
-  (:refer-clojure :exclude [deftype defrecord])
+  (:refer-clojure :exclude [deftype defrecord extend])
   (:require [clojure.string :as s]))
 
 (def ^:private separate (juxt filter remove))
@@ -22,6 +22,8 @@
         (if (some true? (mapcat (fn [pr] (map #(mismatching-mutable? (args %) (pr %)) required)) provided))
           `(throw (Exception. "Mutable declaration mismatching for one or more args")))))))
 
+(defrecord Trait [required-elements protocols-or-interfaces declarations])
+
 (defmacro deftrait
   "Usage: (deftrait ATtrait [^:unsyncronized-volatile elem]
            AProtocol
@@ -29,9 +31,9 @@
   [name required-elements & impl]
   (let [[declarations protocols-or-interfaces] (separate seq? impl)]
     `(def ~name
-       '{:required-elements ~required-elements
-         :protocols-or-interfaces ~protocols-or-interfaces
-         :declarations ~declarations})))
+       (map->Trait '{:required-elements ~required-elements
+                     :protocols-or-interfaces ~protocols-or-interfaces
+                     :declarations ~declarations}))))
 
 (defn- emit-deftype* [name fields opts+specs]
   (let [[interfaces methods opts] (#'clojure.core/parse-opts+specs opts+specs)
@@ -48,7 +50,7 @@
 
 (defn- deftype-raw
   [name args body]
-  (if (= :defaults (first body))
+  (if (= :traits (first body))
     (let [traits (map eval (second body))
           body (rest (rest body))]
       (if-let [err (validate-elements args (map :required-elements traits))]
@@ -162,3 +164,18 @@
          ~(str "Factory function for class " classname ", taking a map of keywords to field values.")
          ([m#] (~(symbol (str classname "/create")) m#)))
        ~classname)))
+
+;;check  (. (eval type) getBasis), mutable declarations, and interfaces
+(defmacro extend [type & body]
+  (if (= :traits (first body))
+    (let [traits (map eval (second body))
+          body (rest (rest body))
+          protocols (set (mapcat :protocols-or-interfaces traits))
+          methods (->> (mapcat :declarations traits)
+                       (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
+                       (map (fn [m] [(first m) (concat '(fn) (vals (second m)))]))
+                       (into {}))
+          traits (mapcat (fn [p] (let [m (keys (:method-map (eval p)))]
+                                   [p (into {} (map #(vector % (methods %)) m))])) protocols)]
+      `(clojure.core/extend ~type ~@traits ~@body))
+    `(clojure.core/extend ~type ~@body)))
