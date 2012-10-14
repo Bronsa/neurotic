@@ -173,9 +173,9 @@
           protocols (set (mapcat :protocols-or-interfaces traits))
           methods (->> (mapcat :declarations traits)
                        (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
-                       (into {} (map (fn [[k v]] [k (concat '(fn) (vals v))]))))
-          traits (mapcat (fn [p] (let [m (keys (:method-map p))
-                                       name (:on p)]
-                                   [name (into {} (map #(vector % (methods %)) m))])) protocols)]
+                       (map (fn [m] [(first m) (concat '(fn) (vals (second m)))]))
+                       (into {}))
+          traits (mapcat (fn [p] (let [m (keys (:method-map (eval p)))]
+                                   [p (into {} (map #(vector % (methods %)) m))])) protocols)]
       `(clojure.core/extend ~type ~@traits ~@body))
     `(clojure.core/extend ~type ~@body)))
