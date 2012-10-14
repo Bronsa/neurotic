@@ -1,5 +1,6 @@
 (ns neurotic.traits
-  (:refer-clojure :exclude [deftype defrecord]))
+  (:refer-clojure :exclude [deftype defrecord])
+  (:require [clojure.string :as s]))
 
 (def ^:private separate (juxt filter remove))
 
@@ -13,8 +14,8 @@
   (let [required (set (mapcat identity provided))
         missing (reduce disj required args)]
     (if-not (empty? missing)
-      `(throw (Exception. (str "deftype declaration is missing the following args: " ~@(map str missing)
-                               "required by one or more implementing traits")))
+      `(throw (Exception. (str "deftype declaration is missing the following args: " ~(s/join ", "(map str missing))
+                               ", required by one or more implementing traits")))
       (let [hashize (fn [args] (into {} (map #(vector % (meta %)) args)))
             args (hashize args)
             provided (map hashize provided)]
