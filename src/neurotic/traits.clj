@@ -22,6 +22,8 @@
         (if (some true? (mapcat (fn [pr] (map #(mismatching-mutable? (args %) (pr %)) required)) provided))
           `(throw (Exception. "Mutable declaration mismatching for one or more args")))))))
 
+(defrecord Trait [required-elements protocols-or-interfaces declarations])
+
 (defmacro deftrait
   "Usage: (deftrait ATtrait [^:unsyncronized-volatile elem]
            AProtocol
@@ -29,9 +31,9 @@
   [name required-elements & impl]
   (let [[declarations protocols-or-interfaces] (separate seq? impl)]
     `(def ~name
-       '{:required-elements ~required-elements
-         :protocols-or-interfaces ~protocols-or-interfaces
-         :declarations ~declarations})))
+       (map->Trait '{:required-elements ~required-elements
+                     :protocols-or-interfaces ~protocols-or-interfaces
+                     :declarations ~declarations}))))
 
 (defn- emit-deftype* [name fields opts+specs]
   (let [[interfaces methods opts] (#'clojure.core/parse-opts+specs opts+specs)
