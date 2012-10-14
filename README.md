@@ -1,15 +1,19 @@
 # neurotic
 
-A library to get traits support to clojure's deftype and defrecord.
+A library to get traits support to clojure's deftype, defrecord and extend.
 
 The purpose of this library is to provide a mechanism of code-reuse for those occasions when using a map and `extend` is not fast enough, or, in the case of java interfaces instead of clojure protcols, `extend` would simply be impossible to use.
+
+## NOTE
+
+With the 0.3.0 release, :defaults has been replaced by :traits
 
 ## Installation
 
 In Leiningen:
 
 ```clojure
-:dependencies [[bronsa/neurotic "0.2.1"]]
+:dependencies [[bronsa/neurotic "0.3.0"]]
 ```
 
 ## Usage
@@ -35,7 +39,7 @@ my-ns=> (deftrait ATrait [] AProtocol (g [_] 1))
 `deftrait` requires the following args: 
 * `name`: the name of the trait
 * `required args`: a vector containing the required args an implementing deftype/defrecord must provide that must match the mutable declaration (will be explained later)
-* `body`: the body of the trait, containing protocols implementation, and possibly the protocols that are going to be implemented (it's not required but strongly reccomended)
+* `body`: the body of the trait, containing protocols implementation, and possibly the protocols that are going to be implemented (it's not required but strongly reccomended, since if it isn't specified, the trait is not going to work inside `extend`)
 
 Now that we have created the trait, let's see how to use it in a `deftype`
 ```clojure
@@ -102,6 +106,7 @@ As you can see, `deftype` is throwing exceptions if a required-arg is missing, o
 
 Everything shown to work with `deftype` works with `defrecord` too.
 
+As of neurotic-0.3.0, traits work on `extend` too, note that due to the nature of `extend`, a trait MUST contain the implemented protocol.
 
 ## License
 
