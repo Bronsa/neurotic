@@ -1,12 +1,13 @@
 # neurotic
 
-A library to get traits support to clojure's deftype, defrecord and extend.
+A library to get traits support to clojure's `deftype`, `defrecord` and `extend`.
 
 The purpose of this library is to provide a mechanism of code-reuse for those occasions when using a map and `extend` is not fast enough, or, in the case of java interfaces instead of clojure protcols, `extend` would simply be impossible to use.
 
 ## NOTE
 
-With the 0.3.0 release, :defaults has been replaced by :traits
+With the 0.3.0 release, `:defaults` has been replaced by `:traits`.
+Contrarily to `clojure.core/extend`, `neurotic.traits/extend` is implemented as a macro.
 
 ## Installation
 
@@ -22,8 +23,8 @@ First of all, require neurotic.traits:
 
 ```clojure
 user=> (ns my-ns
-         (:refer-clojure :exclude [deftype])
-         (:require [neurotic.traits :refer [deftype deftrait]]))
+         (:refer-clojure :exclude [deftype extend])
+         (:require [neurotic.traits :refer [deftype deftrait extend]]))
 nil
 ```
 Next, let's define a protocol with two functions:
@@ -106,7 +107,21 @@ As you can see, `deftype` is throwing exceptions if a required-arg is missing, o
 
 Everything shown to work with `deftype` works with `defrecord` too.
 
-As of neurotic-0.3.0, traits work on `extend` too, note that due to the nature of `extend`, a trait MUST contain the implemented protocol.
+As of neurotic-0.3.0, traits work on `extend` too, note that due to the nature of `extend`, a trait MUST contain the implemented protocol, if a protocol is not provided, its methods are ignored.
+```clojure
+my-ns=>  (defprotocol AProtocol2 (h [_]))
+AProtocol2
+my-ns=> (deftrait ATrait5 [] (h [_] 1))
+#'my-ns/ATrait5
+my-ns=> (deftype AType8 [])
+my_ns.AType8
+my-ns=> (extend AType8 :traits [ATrait2 ATrait5])
+nil
+my-ns=> (g (AType8.))
+0
+my-ns=> (h (AType8.))
+IllegalArgumentException No implementation of method: :h of protocol: #'my-ns/AProtocol2 found for class: my_ns.AType8  clojure.core/-cache-protocol-fn (core_deftype.clj:527)
+```
 
 ## License
 
