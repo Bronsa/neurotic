@@ -1,6 +1,5 @@
 (ns neurotic.traits
-  (:refer-clojure :exclude [deftype defrecord extend extend-type])
-  (:require [clojure.string :as s]))
+  (:refer-clojure :exclude [deftype defrecord extend extend-type]))
 
 (def ^:private separate (juxt filter remove))
 
@@ -10,24 +9,34 @@
 (defn- mismatching-mutable? [meta1 meta2]
   (not (every? true? (map #(= (% meta1) (% meta2)) [:unsynchronized-mutable :volatile-mutable]))))
 
-(defn- validate-elements [args provided]
-  (let [required (set (mapcat identity provided))
-        missing (reduce disj required args)]
-    (if-not (empty? missing)
-      `(throw (Exception. (str "deftype declaration is missing the following args: " ~(s/join ", "(map str missing))
-                               ", required by one or more implementing traits")))
-      (let [hashize (fn [args] (into {} (map #(vector % (meta %)) args)))
-            args (hashize args)
-            provided (map hashize provided)]
-        (if (some true? (mapcat (fn [pr] (map #(mismatching-mutable? (args %) (pr %)) required)) provided))
-          `(throw (Exception. "Mutable declaration mismatching for one or more args")))))))
+(defn- validate-elements [args traits]
+  (let [args (set args)
+        extract (fn [m] {:unsynchronized-mutable (:unsynchronized-mutable m)
+                         :volatile-mutable (:volatile-mutable m)})
+        res (->> traits
+                (mapcat (fn [[trait trait-args]]
+                          (map #(if-let [decl (args %)]
+                                  (let [m1 (meta %)
+                                        m2 (meta decl)]
+                                    (when (mismatching-mutable? m1 m2)
+                                      [trait % (extract m1) (extract m2)]))
+                                  [trait %]) trait-args)))
+                (drop-while nil?))]
+    (when-let [err (first res)]
+      (if (= 4 (count err))
+        (let [[trait arg had-meta expected-meta] err]
+          `(throw (Exception. (str "Mutable declaration mismatching for arg: "
+                                   ~(str arg) " between type declaration and "
+                                   ~(str trait) " trait, had: " ~(str had-meta) ", expected: " ~(str expected-meta)))))
+        `(throw (Exception. (str ~(str (first err)) " trait requires "
+                                 ~(str (second err)) " arg, not present in type declaration")))))))
 
 (defmacro deftrait
   "Usage: (deftrait ATtrait [^:unsyncronized-volatile elem]
            AProtocol
            (protocol-fn [this] elem))"
   [name required-elements & impl]
-  (assert (vector? required-elements))
+
   (let [[declarations protocols-or-interfaces] (separate seq? impl)]
     `(def ~name
        '{:required-elements ~required-elements
@@ -49,15 +58,19 @@
 
 (defn- deftype-raw
   [name args body]
+  {:pre [(symbol? name)
+         (vector? args)]}
   (if (= :traits (first body))
-    (let [traits (map eval (second body))
+    (let [traits (into {} (map (juxt identity eval) (second body)))
           body (rest (rest body))]
-      (if-let [err (validate-elements args (map :required-elements traits))]
+      (if-let [err (validate-elements args (into {} (map (juxt first (comp :required-elements second)) traits)))] ;; {trait1 [arg1 ..] ..}
         err
         (let [[declarations protocols-or-interfaces] (separate seq? body)
-              protocols-or-interfaces (reduce conj (set protocols-or-interfaces) (mapcat :protocols-or-interfaces traits))
+              protocols-or-interfaces (reduce conj (set protocols-or-interfaces)
+                                              (mapcat :protocols-or-interfaces (vals traits)))
               annotate (fn [decs] (into {} (map #(vector (annotate %) %) decs)))
-              declarations (vals (merge (apply merge (map #(annotate (:declarations %)) traits)) (annotate declarations)))]
+              declarations (vals (merge (apply merge (map #(annotate (:declarations %)) (vals traits)))
+                                        (annotate declarations)))]
           (emit-deftype* name args (concat protocols-or-interfaces declarations)))))
     (emit-deftype* name args body)))
 
