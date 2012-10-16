@@ -1,6 +1,6 @@
 # neurotic
 
-A library to get traits support to clojure's `deftype`, `defrecord` and `extend`.
+A library to get traits support to clojure's `deftype`, `defrecord`, `extend` and `extend-type`.
 
 The purpose of this library is to provide a mechanism of code-reuse for those occasions when using a map and `extend` is not fast enough, or, in the case of java interfaces instead of clojure protcols, `extend` would simply be impossible to use.
 
@@ -14,7 +14,7 @@ Contrarily to `clojure.core/extend`, `neurotic.traits/extend` is implemented as 
 In Leiningen:
 
 ```clojure
-:dependencies [[bronsa/neurotic "0.3.0"]]
+:dependencies [[bronsa/neurotic "0.3.1"]]
 ```
 
 ## Usage
