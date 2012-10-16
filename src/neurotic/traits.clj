@@ -1,5 +1,5 @@
 (ns neurotic.traits
-  (:refer-clojure :exclude [deftype defrecord extend])
+  (:refer-clojure :exclude [deftype defrecord extend extend-type])
   (:require [clojure.string :as s]))
 
 (def ^:private separate (juxt filter remove))
@@ -8,7 +8,7 @@
   (list name (meta name) (meta args) (map meta args)))
 
 (defn- mismatching-mutable? [meta1 meta2]
-  (not (every? true?  (map #(= (% meta1) (% meta2)) [:unsynchronized-mutable :volatile-mutable]))))
+  (not (every? true? (map #(= (% meta1) (% meta2)) [:unsynchronized-mutable :volatile-mutable]))))
 
 (defn- validate-elements [args provided]
   (let [required (set (mapcat identity provided))
@@ -166,17 +166,32 @@
          ([m#] (~(symbol (str classname "/create")) m#)))
        ~classname)))
 
+(defn- parse-proto+meths [traits l]
+  (let [protocols (set (mapcat :protocols-or-interfaces traits))
+        methods (->> (mapcat :declarations traits)
+                       (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
+                       (map (fn [m] [(first m) (concat l(vals (second m)))]))
+                       (into {}))]
+    [protocols methods]))
+
 ;;check  (. (eval type) getBasis), mutable declarations, and interfaces
 (defmacro extend [type & body]
   (if (= :traits (first body))
     (let [traits (map eval (second body))
           body (rest (rest body))
-          protocols (set (mapcat :protocols-or-interfaces traits))
-          methods (->> (mapcat :declarations traits)
-                       (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
-                       (map (fn [m] [(first m) (concat '(fn) (vals (second m)))]))
-                       (into {}))
+          [protocols methods] (parse-proto+meths traits '(fn))
           traits (mapcat (fn [p] (let [m (keys (:method-map (eval p)))]
                                    [p (into {} (map #(vector % (methods %)) m))])) protocols)]
       `(clojure.core/extend ~type ~@traits ~@body))
     `(clojure.core/extend ~type ~@body)))
+
+(defmacro extend-type [type & body]
+  (if (= :traits (first body))
+    (let [traits (map eval (second body))
+          body (rest (rest body))
+          [protocols methods] (parse-proto+meths traits '())
+          traits (mapcat (fn [p] (let [m (keys (:method-map (eval p)))]
+                                   (list* p (remove #(= 1 (count %)) ;;remove not implemented protocol functions
+                                                    (map #(list* (-> % name symbol) (methods %)) m))))) protocols)]
+      `(clojure.core/extend-type ~type ~@traits ~@body))
+    `(clojure.core/extend-type ~type ~@body)))
