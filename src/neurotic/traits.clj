@@ -36,7 +36,8 @@
            AProtocol
            (protocol-fn [this] elem))"
   [name required-elements & impl]
-
+  {:pre [(symbol? name)
+         (vector? required-elements)]}
   (let [[declarations protocols-or-interfaces] (separate seq? impl)]
     `(def ~name
        '{:required-elements ~required-elements
