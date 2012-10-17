@@ -13,7 +13,7 @@ With the 0.3.0 release, `:defaults` has been replaced by `:traits`.
 In Leiningen:
 
 ```clojure
-:dependencies [[bronsa/neurotic "0.3.1"]]
+:dependencies [[bronsa/neurotic "0.3.2"]]
 ```
 
 ## Usage
