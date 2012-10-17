@@ -7,7 +7,6 @@ The purpose of this library is to provide a mechanism of code-reuse for those oc
 ## NOTE
 
 With the 0.3.0 release, `:defaults` has been replaced by `:traits`.
-Contrarily to `clojure.core/extend`, `neurotic.traits/extend` is implemented as a macro.
 
 ## Installation
 

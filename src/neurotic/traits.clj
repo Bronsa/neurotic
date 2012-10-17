@@ -187,15 +187,16 @@
     [protocols methods]))
 
 ;;check  (. (eval type) getBasis), mutable declarations, and interfaces
-(defmacro extend [type & body]
+(defn extend [type & body]
   (if (= :traits (first body))
-    (let [traits (map eval (second body))
+    (let [traits (second body)
           body (rest (rest body))
           [protocols methods] (parse-proto+meths traits '(fn))
-          traits (mapcat (fn [p] (let [m (keys (:method-map (eval p)))]
-                                   [p (into {} (map #(vector % (methods %)) m))])) protocols)]
-      `(clojure.core/extend ~type ~@traits ~@body))
-    `(clojure.core/extend ~type ~@body)))
+          traits (mapcat (fn [p] (let [p (eval p)
+                                       m (keys (:method-map p))]
+                                   [p (into {} (map #(vector % (eval (methods %))) m))])) protocols)]
+      (apply clojure.core/extend type (concat traits body)))
+    (apply clojure.core/extend type body)))
 
 (defmacro extend-type [type & body]
   (if (= :traits (first body))
