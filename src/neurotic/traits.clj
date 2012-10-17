@@ -6,6 +6,7 @@
            clojure.lang.Keyword))
 
 (def ^:private separate (juxt filter remove))
+(def ^:private protocol? @#'clojure.core/protocol?)
 
 (defn- annotate [[name args & _]]
   (list name (meta name) (meta args) (map meta args)))
@@ -35,6 +36,14 @@
         `(throw (Exception. (str ~(str (first err)) " trait requires "
                                  ~(str (second err)) " arg, not present in type declaration")))))))
 
+(defn- parse-proto+meths [traits l]
+  (let [protocols (set (mapcat :protocols-or-interfaces traits))
+        methods (->> (mapcat :declarations traits)
+                       (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
+                       (map (fn [m] [(first m) (concat l(vals (second m)))]))
+                       (into {}))]
+    [protocols methods]))
+
 (defmacro deftrait
   "Usage: (deftrait ATtrait [^:unsyncronized-volatile elem]
            AProtocol
@@ -45,7 +54,7 @@
   (let [[declarations protocols-or-interfaces] (separate seq? impl)
         fn-set (set (mapcat (fn [p-or-i]
                               (let [p-or-i (eval p-or-i)]
-                                (if (#'clojure.core/protocol? p-or-i)
+                                (if (protocol? p-or-i)
                                   (->> p-or-i :method-map keys (map #(.sym ^Keyword %)))
                                   (->> ^Class p-or-i .getMethods (map #(-> ^Method % .getName symbol))))))
                             protocols-or-interfaces))]
@@ -190,33 +199,28 @@
          ([m#] (~(symbol (str classname "/create")) m#)))
        ~classname)))
 
-(defn- parse-proto+meths [traits l]
-  (let [protocols (set (mapcat :protocols-or-interfaces traits))
-        methods (->> (mapcat :declarations traits)
-                       (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
-                       (map (fn [m] [(first m) (concat l(vals (second m)))]))
-                       (into {}))]
-    [protocols methods]))
-
-;;check  (. (eval type) getBasis), mutable declarations, and interfaces
+;;check  (. (eval type) getBasis), mutable declarations
 (defn extend [type & body]
   (if (= :traits (first body))
     (let [traits (second body)
           body (rest (rest body))
           [protocols methods] (parse-proto+meths traits '(fn))
-          traits (mapcat (fn [p] (let [p (eval p)
-                                       m (keys (:method-map p))]
-                                   [p (into {} (map #(vector % (eval (methods %))) m))])) protocols)]
-      (apply clojure.core/extend type (concat traits body)))
+          protocols (eval protocols)]
+      (if (every? protocol? protocols)
+        (let [traits (mapcat (fn [p] (let [m (keys (:method-map p))]
+                                       [p (into {} (map #(vector % (eval (methods %))) m))])) protocols)]
+          (apply clojure.core/extend type (concat traits body)))
+        (throw (Exception. "One or more traits contains an interface that is impossible to implement from extend"))))
     (apply clojure.core/extend type body)))
 
-;;must ensure we're extending only to protocols, not interfaces
 (defmacro extend-type [type & body]
   (if (= :traits (first body))
     (let [traits (map eval (second body))
           body (rest (rest body))
-          [protocols methods] (parse-proto+meths traits '())
-          traits (mapcat (fn [p] (let [m (keys (:method-map (eval p)))]
-                                   (list* p (map #(list* (.sym ^Keyword %) (methods %)) m)))) protocols)]
-      `(clojure.core/extend-type ~type ~@traits ~@body))
+          [protocols methods] (parse-proto+meths traits '())]
+      (if (every? protocol? (eval protocols))
+        (let [traits (mapcat (fn [p] (let [m (keys (:method-map (eval p)))]
+                                       (list* p (map #(list* (.sym ^Keyword %) (methods %)) m)))) protocols)]
+          `(clojure.core/extend-type ~type ~@traits ~@body))
+        (throw (Exception. "One or more traits contains an interface that is impossible to implement from extend-type"))))
     `(clojure.core/extend-type ~type ~@body)))
