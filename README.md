@@ -7,7 +7,8 @@ The purpose of this library is to provide a mechanism of code-reuse for those oc
 ## NOTE
 
 With the 0.3.0 release, `:defaults` has been replaced by `:traits`.
-Since release 0.3.2 traits must contain the declaration of the interfaces/protocols that the methods implemented belong to, if they don't, `deftrait` will throw an exception.
+
+Since release 0.3.3 traits must contain the declaration of the interfaces/protocols that the methods implemented belong to, if they don't, `deftrait` will throw an exception.
 
 Because of their nature, both `extend` and `extend-type` won't work with traits implementing interfaces.
 
@@ -16,7 +17,7 @@ Because of their nature, both `extend` and `extend-type` won't work with traits 
 In Leiningen:
 
 ```clojure
-:dependencies [[bronsa/neurotic "0.3.2"]]
+:dependencies [[bronsa/neurotic "0.3.3"]]
 ```
 
 ## Usage
