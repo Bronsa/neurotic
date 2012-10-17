@@ -1,5 +1,9 @@
+(set! *warn-on-reflection* true)
+
 (ns neurotic.traits
-  (:refer-clojure :exclude [deftype defrecord extend extend-type]))
+  (:refer-clojure :exclude [deftype defrecord extend extend-type])
+  (:import java.lang.reflect.Method
+           clojure.lang.Keyword))
 
 (def ^:private separate (juxt filter remove))
 
@@ -38,7 +42,15 @@
   [name required-elements & impl]
   {:pre [(symbol? name)
          (vector? required-elements)]}
-  (let [[declarations protocols-or-interfaces] (separate seq? impl)]
+  (let [[declarations protocols-or-interfaces] (separate seq? impl)
+        fn-set (set (mapcat (fn [p-or-i]
+                              (let [p-or-i (eval p-or-i)]
+                                (if (#'clojure.core/protocol? p-or-i)
+                                  (->> p-or-i :method-map keys (map #(.sym ^Keyword %)))
+                                  (->> ^Class p-or-i .getMethods (map #(-> ^Method % .getName symbol))))))
+                            protocols-or-interfaces))]
+    (when-let [[n] (first (drop-while second (map (comp (juxt identity fn-set) first) declarations)))]
+      (throw (Exception. (str n " declaration not found in none of the protocols/interfaces implemeted by trait " name))))
     `(def ~name
        '{:required-elements ~required-elements
          :protocols-or-interfaces ~protocols-or-interfaces
@@ -198,13 +210,13 @@
       (apply clojure.core/extend type (concat traits body)))
     (apply clojure.core/extend type body)))
 
+;;must ensure we're extending only to protocols, not interfaces
 (defmacro extend-type [type & body]
   (if (= :traits (first body))
     (let [traits (map eval (second body))
           body (rest (rest body))
           [protocols methods] (parse-proto+meths traits '())
           traits (mapcat (fn [p] (let [m (keys (:method-map (eval p)))]
-                                   (list* p (remove #(= 1 (count %)) ;;remove not implemented protocol functions
-                                                    (map #(list* (-> % name symbol) (methods %)) m))))) protocols)]
+                                   (list* p (map #(list* (.sym ^Keyword %) (methods %)) m)))) protocols)]
       `(clojure.core/extend-type ~type ~@traits ~@body))
     `(clojure.core/extend-type ~type ~@body)))
