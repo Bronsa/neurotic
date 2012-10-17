@@ -7,6 +7,9 @@ The purpose of this library is to provide a mechanism of code-reuse for those oc
 ## NOTE
 
 With the 0.3.0 release, `:defaults` has been replaced by `:traits`.
+Since release 0.3.2 traits must contain the declaration of the interfaces/protocols that the methods implemented belong to, if they don't, `deftrait` will throw an exception.
+
+Because of their nature, both `extend` and `extend-type` won't work with traits implementing interfaces.
 
 ## Installation
 
@@ -39,7 +42,7 @@ my-ns=> (deftrait ATrait [] AProtocol (g [_] 1))
 `deftrait` requires the following args: 
 * `name`: the name of the trait
 * `required args`: a vector containing the required args an implementing deftype/defrecord must provide that must match the mutable declaration (will be explained later)
-* `body`: the body of the trait, containing protocols implementation, and possibly the protocols that are going to be implemented (it's not required but strongly reccomended, since if it isn't specified, the trait is not going to work inside `extend`)
+* `body`: the body of the trait, containing interface/protocol methods implementation, and the interfaces/protocols that are going to be implemented 
 
 Now that we have created the trait, let's see how to use it in a `deftype`
 ```clojure
@@ -106,7 +109,6 @@ As you can see, `deftype` is throwing exceptions if a required-arg is missing, o
 
 Everything shown to work with `deftype` works with `defrecord` too.
 
-As of neurotic-0.3.0, traits work on `extend` too, note that due to the nature of `extend`, a trait MUST contain the implemented protocol, if a protocol is not provided, its methods are ignored.
 ```clojure
 my-ns=>  (defprotocol AProtocol2 (h [_]))
 AProtocol2
