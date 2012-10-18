@@ -19,14 +19,14 @@
         extract (fn [m] {:unsynchronized-mutable (:unsynchronized-mutable m)
                          :volatile-mutable (:volatile-mutable m)})
         res (->> traits
-                (mapcat (fn [[trait trait-args]]
-                          (map #(if-let [decl (args %)]
-                                  (let [m1 (meta %)
-                                        m2 (meta decl)]
-                                    (when (mismatching-mutable? m1 m2)
-                                      [trait % (extract m1) (extract m2)]))
-                                  [trait %]) trait-args)))
-                (drop-while nil?))]
+                 (mapcat (fn [[trait trait-args]]
+                           (map #(if-let [decl (args %)]
+                                   (let [m1 (meta %)
+                                         m2 (meta decl)]
+                                     (when (mismatching-mutable? m1 m2)
+                                       [trait % (extract m1) (extract m2)]))
+                                   [trait %]) trait-args)))
+                 (drop-while nil?))]
     (when-let [err (first res)]
       (if (= 4 (count err))
         (let [[trait arg had-meta expected-meta] err]
@@ -39,9 +39,9 @@
 (defn- parse-proto+meths [traits l]
   (let [protocols (set (mapcat :protocols-or-interfaces traits))
         methods (->> (mapcat :declarations traits)
-                       (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
-                       (map (fn [m] [(first m) (concat l(vals (second m)))]))
-                       (into {}))]
+                     (reduce (fn [r [k a & b]] (merge-with conj r {(keyword k) {(count a) (list* a b)}})) {})
+                     (map (fn [m] [(first m) (concat l (vals (second m)))]))
+                     (into {}))]
     [protocols methods]))
 
 (defmacro deftrait
@@ -199,7 +199,6 @@
          ([m#] (~(symbol (str classname "/create")) m#)))
        ~classname)))
 
-;;check  (. (eval type) getBasis), mutable declarations
 (defn extend [type & body]
   (if (= :traits (first body))
     (let [traits (second body)
