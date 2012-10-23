@@ -98,7 +98,7 @@
 
 (defmacro deftype [name args & body]
   (#'clojure.core/validate-fields args)
-  (deftype-raw name args body))
+  (deftype-raw name args (conj body 'clojure.lang.IType)))
 
 (defmacro defrecord
   [name fields & opts+specs]
