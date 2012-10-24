@@ -17,7 +17,7 @@ Because of their nature, both `extend` and `extend-type` won't work with traits 
 In Leiningen:
 
 ```clojure
-:dependencies [[bronsa/neurotic "0.3.3"]]
+:dependencies [[bronsa/neurotic "0.3.4"]]
 ```
 
 ## Usage
