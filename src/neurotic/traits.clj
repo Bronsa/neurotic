@@ -30,11 +30,11 @@
     (when-let [err (first res)]
       (if (= 4 (count err))
         (let [[trait arg had-meta expected-meta] err]
-          `(throw (Exception. (str "Mutable declaration mismatching for arg: "
-                                   ~(str arg) " between type declaration and "
-                                   ~(str trait) " trait, had: " ~(str had-meta) ", expected: " ~(str expected-meta)))))
-        `(throw (Exception. (str ~(str (first err)) " trait requires "
-                                 ~(str (second err)) " arg, not present in type declaration")))))))
+          `(throw (Exception. ~(str "Mutable declaration mismatching for arg: "
+                                    arg " between type declaration and "
+                                    trait " trait, had: " had-meta ", expected: " expected-meta))))
+        `(throw (Exception. ~(str (first err) " trait requires "
+                                  (second err) " arg, not present in type declaration")))))))
 
 (defn- parse-proto+meths [traits l]
   (let [protocols (set (mapcat :protocols-or-interfaces traits))
