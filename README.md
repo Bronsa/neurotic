@@ -17,7 +17,7 @@ Because of their nature, both `extend` and `extend-type` won't work with traits 
 In Leiningen:
 
 ```clojure
-:dependencies [[bronsa/neurotic "0.3.4"]]
+:dependencies [[bronsa/neurotic "0.3.5"]]
 ```
 
 ## Usage
@@ -40,10 +40,10 @@ We can create a trait using `deftrait`:
 my-ns=> (deftrait ATrait [] AProtocol (g [_] 1))
 #'my-ns/ATrait
 ```
-`deftrait` requires the following args: 
+`deftrait` requires the following args:
 * `name`: the name of the trait
 * `required args`: a vector containing the required args an implementing deftype/defrecord must provide that must match the mutable declaration (will be explained later)
-* `body`: the body of the trait, containing interface/protocol methods implementation, and the interfaces/protocols that are going to be implemented 
+* `body`: the body of the trait, containing interface/protocol methods implementation, and the interfaces/protocols that are going to be implemented
 
 Now that we have created the trait, let's see how to use it in a `deftype`
 ```clojure
@@ -69,7 +69,7 @@ Both ATrait and ATrait2 implements the single-arity version of `g`; what happens
 ```clojure
 my-ns=> (deftype AType [] :traits [ATrait2 ATrait])
 my_ns.AType
-my-ns=> (let [a (AType2.)] [(g a) (g a :foo) (f a)]) 
+my-ns=> (let [a (AType2.)] [(g a) (g a :foo) (f a)])
 [1 :foo 0]
 ```
 
@@ -127,6 +127,6 @@ IllegalArgumentException No implementation of method: :h of protocol: #'my-ns/AP
 
 ## License
 
-Copyright © 2012 Bronsa
+Copyright © 2012-2013 Bronsa
 
 Distributed under the Eclipse Public License, the same as Clojure.
