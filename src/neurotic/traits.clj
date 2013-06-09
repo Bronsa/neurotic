@@ -68,12 +68,14 @@
 (defn- emit-deftype* [name fields opts+specs]
   (let [[interfaces methods opts] (#'clojure.core/parse-opts+specs opts+specs)
         ns-part (namespace-munge *ns*)
-        classname (symbol (str ns-part "." name))
+        classname (with-meta (symbol (str ns-part "." name)) (meta name))
         hinted-fields fields
         fields (vec (map #(with-meta % nil) fields))]
     `(let []
        (declare ~(symbol (str  '-> name)))
-       ~(#'clojure.core/emit-deftype* name name (vec hinted-fields) (vec interfaces) methods)
+       (deftype* ~name ~classname ~(vec hinted-fields)
+         :implements ~(vec interfaces)
+         ~@methods)
        (import ~classname)
        ~(#'clojure.core/build-positional-factory name classname fields)
        ~classname)))
@@ -94,11 +96,12 @@
               declarations (vals (merge (apply merge (map #(annotate (:declarations %)) (vals traits)))
                                         (annotate declarations)))]
           (emit-deftype* name args (concat protocols-or-interfaces declarations)))))
+
     (emit-deftype* name args body)))
 
 (defmacro deftype [name args & body]
   (#'clojure.core/validate-fields args)
-  (deftype-raw name args (conj body 'clojure.lang.IType)))
+  (deftype-raw name args (concat body '(clojure.lang.IType))))
 
 (defmacro defrecord
   [name fields & opts+specs]
