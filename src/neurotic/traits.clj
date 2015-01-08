@@ -59,7 +59,7 @@
                                   (->> ^Class p-or-i .getMethods (map #(-> ^Method % .getName symbol))))))
                             protocols-or-interfaces))]
     (when-let [[n] (first (drop-while second (map (comp (juxt identity fn-set) first) declarations)))]
-      (throw (Exception. (str n " declaration not found in none of the protocols/interfaces implemeted by trait " name))))
+      (throw (Exception. (str n " declaration not found in none of the protocols/interfaces implemented by trait " name))))
     `(def ~name
        '{:required-elements ~required-elements
          :protocols-or-interfaces ~protocols-or-interfaces
