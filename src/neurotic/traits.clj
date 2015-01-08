@@ -199,7 +199,8 @@
 
        (defn ~(symbol (str 'map-> name))
          ~(str "Factory function for class " classname ", taking a map of keywords to field values.")
-         ([m#] (~(symbol (str classname "/create")) m#)))
+         ([m#] (~(symbol (str classname "/create"))
+                (if (instance? clojure.lang.MapEquivalence m#) m# (into {} m#)))))
        ~classname)))
 
 (defn extend [type & body]
