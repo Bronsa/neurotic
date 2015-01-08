@@ -67,7 +67,7 @@ my-ns=> (deftrait ATrait2 [] AProtocol (g [_] 0) (g [_ i] i) (f [_] 0))
 Both ATrait and ATrait2 implements the single-arity version of `g`; what happens when we implements both the traits in a new type?
 
 ```clojure
-my-ns=> (deftype AType [] :traits [ATrait2 ATrait])
+my-ns=> (deftype AType2 [] :traits [ATrait2 ATrait])
 my_ns.AType
 my-ns=> (let [a (AType2.)] [(g a) (g a :foo) (f a)])
 [1 :foo 0]
@@ -75,7 +75,7 @@ my-ns=> (let [a (AType2.)] [(g a) (g a :foo) (f a)])
 
 We can see that when multiple traits implementing the same function and arity, the implementation of the last trait specified wins.
 
-Additionaly, the implementation provided in the body of a `deftype` wind over all the traits:
+Additionaly, the implementation provided in the body of a `deftype` wins over all the traits:
 ```clojure
 my-ns=> (deftype AType3 [] :traits [ATrait2 ATrait] (f [_] 2))
 my_ns.AType3
@@ -111,9 +111,9 @@ As you can see, `deftype` is throwing exceptions if a required-arg is missing, o
 Everything shown to work with `deftype` works with `defrecord` too.
 
 ```clojure
-my-ns=>  (defprotocol AProtocol2 (h [_]))
+my-ns=> (defprotocol AProtocol2 (h [_]))
 AProtocol2
-my-ns=> (deftrait ATrait5 [] (h [_] 1))
+my-ns=> (deftrait ATrait5 [] AProtocol2 (h [_] 1))
 #'my-ns/ATrait5
 my-ns=> (deftype AType8 [])
 my_ns.AType8
@@ -122,11 +122,11 @@ nil
 my-ns=> (g (AType8.))
 0
 my-ns=> (h (AType8.))
-IllegalArgumentException No implementation of method: :h of protocol: #'my-ns/AProtocol2 found for class: my_ns.AType8  clojure.core/-cache-protocol-fn (core_deftype.clj:527)
+1
 ```
 
 ## License
 
-Copyright © 2012-2013 Bronsa
+Copyright © 2012-2015 Bronsa
 
 Distributed under the Eclipse Public License, the same as Clojure.
